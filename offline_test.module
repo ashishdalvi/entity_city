@@ -1,0 +1,559 @@
+<?php
+
+/**
+ * @file
+ * Implements the basic functionality required to create and display an entity.
+ *
+ * This example does not use the
+ * @link http://drupal.org/project/entity Entity API module @endlink, which is
+ * used by many entity implementations and is recommended by many.
+ *
+ * An example of use of creating and managing entities using the Entity API
+ * module is provided in the
+ * @link http://drupal.org/project/model Model Entity module @endlink.
+ *
+ * @todo: Reference the ronald_istos article series
+ * @todo: Reference the Drupal module development book
+ * @todo: Add a single field
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function offline_test_entity_info() {
+  $info['entity_city'] = array(
+    'label' => t('City Entity'),
+    'controller class' => 'CityEntityController',
+    'base table' => 'entity_city',
+    'uri callback' => 'entity_city_basic_uri',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+      'id' => 'entity_id' ,
+      'bundle' => 'bundle_type',
+    ),
+    'bundle keys' => array(
+      'bundle' => 'bundle_type',
+    ),
+    'static cache' => TRUE,
+    'bundles' => array(
+      'city_entity_bundle' => array(
+        'label' => 'City Entity Bundle',
+        'admin' => array(
+          'path' => 'admin/entity_city/manage',
+          'access arguments' => array('administer city_entity entities'),
+        ),
+      ),
+    ),
+    'view modes' => array(
+      'tweaky' => array(
+        'label' => t('Full Mode'),
+        'custom settings' => FALSE,
+      ),
+    ),
+  );
+
+  return $info;
+}
+
+/**
+ * Entity load function to load the city entity.
+ *
+ */
+function entity_city_load($entity_id = NULL, $reset = FALSE) {
+
+  $entity_ids = (isset($entity_id) ? array($entity_id) : array());
+  $entity_objects = entity_city_load_multiple($entity_ids, array(), $reset);
+
+  return $entity_objects ? reset($entity_objects) : FALSE;
+}
+
+/**
+ * Loads multiple basic entities.
+ */
+function entity_city_load_multiple($entity_ids = FALSE, $conditions = array(), $reset = FALSE) {
+  return entity_load('entity_city', $entity_ids, $conditions, $reset);
+}
+
+/**
+ * Implements the uri callback.
+ */
+function entity_city_basic_uri($basic) {
+  return array(
+    'path' => 'entity_city/' . $basic->entity_id,
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function offline_test_menu() {
+
+  // Menu to list the all the entitues
+  $items['admin/entity_city/manage'] = array(
+    'title' => 'Manage Entity City Entity Type',
+    'page callback' => 'entity_city_list_entities',
+    'access arguments' => array('administer city entities'),
+  );
+
+  $items['admin/entity_city/manage/add'] = array(
+    'title' => 'Add an City Entity',
+    'page callback' => 'entity_city_add',
+    'access arguments' => array('create city entity'),
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  // List of all entity_example_basic entities.
+  $items['admin/entity_city/manage/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  // The page to view our entities - needs to follow what
+  // is defined in basic_uri and will use load_basic to retrieve
+  // the necessary entity info.
+  $items['entity_city/%entity_city'] = array(
+    'title' => 'City Entity',
+    'page callback' => 'entity_city_view',
+    'page arguments' => array(1),
+    'access arguments' => array('view any city entity'),
+  );
+
+  // 'View' tab for an individual entity page.
+  $items['entity_city/%entity_city/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  // 'Edit' tab for an individual entity page.
+  $items['entity_city/%entity_city/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('entity_city_form', 1),
+    'access arguments' => array('edit any city entity'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  // Add example entities.
+  $items['entity_city/add'] = array(
+    'title' => 'Add an Entity Example Basic Entity',
+    'page callback' => 'entity_city_add',
+    'access arguments' => array('create city entity'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function offline_test_permission() {
+  $permissions = array(
+    'administer city entities' => array(
+      'title' => t('administer city entities'),
+    ),
+    'view any city entity' => array(
+      'title' => t('View any Entity Example Basic entity'),
+    ),
+    'edit any city entity' => array(
+      'title' => t('edit any city entity'),
+    ),
+    'create city entity' => array(
+      'title' => t('create city entity'),
+    ),
+  );
+  return $permissions;
+}
+
+/**
+ * Callback function to list all the city entities in table.
+ */
+function entity_city_list_entities() {
+  $content = array();
+  // Load all of our entities.
+  $entities = entity_city_load_multiple();
+  if (!empty($entities)) {
+    foreach ($entities as $entity) {
+      // Create tabular rows for our entities.
+      $rows[] = array(
+        'data' => array(
+          'id' => $entity->entity_id,
+          'title' => l($entity->title, 'entity_city/' . $entity->entity_id),
+          'location' => $entity->location,
+          'pop' => $entity->pop,
+          'state' => $entity->state,
+        ),
+      );
+    }
+    // Put our entities into a themed table. See theme_table() for details.
+    $content['entity_table'] = array(
+      '#theme' => 'table',
+      '#rows' => $rows,
+      '#header' => array(t('ID'), t('Title'), t('Location'), t('Pop'), t('State')),
+    );
+  }
+  else {
+    $content[] = array(
+      '#type' => 'item',
+      '#markup' => t('No Content'),
+    );
+  }
+  return $content;
+}
+
+/**
+ * Menu callback to display an entity.
+ */
+function entity_city_view($entity, $view_mode = 'Full Mode') {
+
+  // Our entity type, for convenience.
+  $entity_type = 'entity_city';
+  // Start setting up the content.
+  $entity->content = array(
+    '#view_mode' => $view_mode,
+  );
+  // Build fields content - this is where the Field API really comes in to play.
+  // The task has very little code here because it all gets taken care of by
+  // field module.
+  // field_attach_prepare_view() lets the fields load any data they need
+  // before viewing.
+  field_attach_prepare_view($entity_type, array($entity->entity_id => $entity),
+    $view_mode);
+  // We call entity_prepare_view() so it can invoke hook_entity_prepare_view()
+  // for us.
+  entity_prepare_view($entity_type, array($entity->entity_id => $entity));
+  // Now field_attach_view() generates the content for the fields.
+  $entity->content += field_attach_view($entity_type, $entity, $view_mode);
+
+  // OK, Field API done, now we can set up some of our own data.
+  $entity->content['created'] = array(
+    '#type' => 'item',
+    '#title' => t('Created date'),
+    '#markup' => format_date($entity->created),
+  );
+  $entity->content['title'] = array(
+    '#type' => 'item',
+    '#title' => t('title'),
+    '#markup' => $entity->title,
+  );
+  $entity->content['location'] = array(
+    '#type' => 'item',
+    '#title' => t('Location'),
+    '#markup' => $entity->location,
+  );
+  $entity->content['pop'] = array(
+    '#type' => 'item',
+    '#title' => t('POP'),
+    '#markup' => $entity->pop,
+  );
+  $entity->content['state'] = array(
+    '#type' => 'item',
+    '#title' => t('state'),
+    '#markup' => $entity->state,
+  );
+
+  // Generic code to invoke hook_entity_view() of another modules.
+  global $language;
+  $langcode = $language->language;
+  module_invoke_all('entity_view', $entity, $entity_type, $view_mode, $langcode);
+
+  // Generic code to invoke the entity_view_alter().
+  drupal_alter(array('entity_city_view', 'entity_view'), $entity->content, $entity_type);
+
+  return $entity->content;
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function offline_test_field_extra_fields() {
+  $form_elements['title'] = array(
+    'label' => t('title'),
+    'description' => t('Entity Title'),
+  );
+  $form_elements['location'] = array(
+    'label' => t('Location'),
+    'description' => t('City Location'),
+  );
+  $form_elements['pop'] = array(
+    'label' => t('POP'),
+  );
+  $form_elements['state'] = array(
+    'label' => t('State'),
+    'description' => t('State of the city'),
+  );
+  $display_elements['created'] = array(
+    'label' => t('Creation date'),
+    'description' => t('Creation date (an extra display field)'),
+    'weight' => 0,
+  );
+  $display_elements['title'] = array(
+    'label' => t('title'),
+    'description' => t('Just like title, but trying to point out that it is a separate property'),
+    'weight' => 0,
+  );
+
+  // Since we have only one bundle type, we'll just provide the extra_fields
+  // for it here.
+  $extra_fields['entity_title']['city_entity_bundle']['form'] = $form_elements;
+  $extra_fields['entity_title']['city_entity_bundle']['display'] = $display_elements;
+
+  return $extra_fields;
+}
+
+/**
+ * Provides a wrapper on the edit form to add a new entity.
+ */
+function entity_city_add() {
+  // Create a basic entity structure to be used and passed to the validation
+  // and submission functions.
+  $entity = entity_get_controller('entity_city')->create();
+  return drupal_get_form('entity_city_form', $entity);
+}
+
+/**
+ * Form function to create an entity_city entity.
+ *
+ */
+function entity_city_form($form, &$form_state, $entity) {
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#required' => TRUE,
+    '#default_value' => $entity->title,
+  );
+  $form['location'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Location'),
+    '#required' => TRUE,
+    '#default_value' => $entity->location,
+  );
+  $form['pop'] = array(
+    '#type' => 'textfield',
+    '#title' => t('pop'),
+    '#required' => TRUE,
+    '#default_value' => $entity->pop,
+  );
+  $form['state'] = array(
+    '#type' => 'textfield',
+    '#title' => t('State'),
+    '#required' => TRUE,
+    '#default_value' => $entity->state,
+  );
+
+  $form['basic_entity'] = array(
+    '#type' => 'value',
+    '#value' => $entity,
+  );
+
+  field_attach_form('entity_city', $entity, $form, $form_state);
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => 100,
+  );
+  $form['delete'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete'),
+    '#submit' => array('entity_city_edit_delete'),
+    '#weight' => 200,
+  );
+
+  return $form;
+}
+
+
+/**
+ * Validation handler for entity_example_basic_add_form form.
+ *
+ * We pass things straight through to the Field API to handle validation
+ * of the attached fields.
+ */
+function entity_city_form_validate($form, &$form_state) {
+  field_attach_form_validate('entity_city', $form_state['values']['basic_entity'], $form, $form_state);
+}
+
+
+/**
+ * Form submit handler: Submits basic_add_form information.
+ */
+function entity_city_form_submit($form, &$form_state) {
+  $entity = $form_state['values']['basic_entity'];
+  $entity->title = $form_state['values']['title'];
+  $entity->location = $form_state['values']['location'];
+  $entity->pop = $form_state['values']['pop'];
+  $entity->state = $form_state['values']['state'];
+  field_attach_submit('entity_city', $entity, $form, $form_state);
+  $entity = entity_city_save($entity);
+  $form_state['redirect'] = 'entity_city/' . $entity->entity_id;
+}
+
+/**
+ * Form deletion handler.
+ *
+ * @todo: 'Are you sure?' message.
+ */
+function entity_city_edit_delete($form, &$form_state) {
+  $entity = $form_state['values']['basic_entity'];
+  entity_city_delete($entity);
+  drupal_set_message(t('The entity %title (ID %id) has been deleted',
+      array('%title' => $entity->title, '%id' => $entity->entity_id))
+  );
+  $form_state['redirect'] = 'admin/entity_city/manage';
+}
+
+/**
+ * We save the entity by calling the controller.
+ */
+function entity_city_save(&$entity) {
+  return entity_get_controller('entity_city')->save($entity);
+}
+
+/**
+ * Use the controller to delete the entity.
+ */
+function entity_city_delete($entity) {
+  entity_get_controller('entity_city')->delete($entity);
+}
+
+/**
+ * EntityExampleBasicControllerInterface definition.
+ *
+ * We create an interface here because anyone could come along and
+ * use hook_entity_info_alter() to change our controller class.
+ * We want to let them know what methods our class needs in order
+ * to function with the rest of the module, so here's a handy list.
+ *
+ * @see hook_entity_info_alter()
+ */
+interface EntityCityBasicControllerInterface
+  extends DrupalEntityControllerInterface {
+
+  /**
+   * Create an entity.
+   */
+  public function create();
+
+  /**
+   * Save an entity.
+   *
+   * @param object $entity
+   *   The entity to save.
+   */
+  public function save($entity);
+
+  /**
+   * Delete an entity.
+   *
+   * @param object $entity
+   *   The entity to delete.
+   */
+  public function delete($entity);
+
+}
+
+/**
+ * EntityExampleBasicController extends DrupalDefaultEntityController.
+ *
+ * Our subclass of DrupalDefaultEntityController lets us add a few
+ * important create, update, and delete methods.
+ */
+class CityEntityController
+  extends DrupalDefaultEntityController
+  implements EntityCityBasicControllerInterface {
+
+  /**
+   * Create and return a new entity_example_basic entity.
+   */
+  public function create() {
+    $entity = new stdClass();
+    $entity->type = 'entity_city';
+    $entity->entity_id = 0;
+    $entity->bundle_type = 'city_entity_bundle';
+    $entity->title = '';
+    $entity->location = '';
+    $entity->pop = '';
+    $entity->state = '';
+    return $entity;
+  }
+
+  /**
+   * Saves the custom fields using drupal_write_record().
+   */
+  public function save($entity) {
+    // If our entity has no basic_id, then we need to give it a
+    // time of creation.
+    if (empty($entity->entity_id)) {
+      $entity->created = time();
+    }
+    // Invoke hook_entity_presave().
+    module_invoke_all('entity_presave', $entity, 'entity_city');
+    // The 'primary_keys' argument determines whether this will be an insert
+    // or an update. So if the entity already has an ID, we'll specify
+    // basic_id as the key.
+    $primary_keys = $entity->entity_id ? 'entity_id' : array();
+    // Write out the entity record.
+    drupal_write_record('entity_city', $entity, $primary_keys);
+    // We're going to invoke either hook_entity_update() or
+    // hook_entity_insert(), depending on whether or not this is a
+    // new entity. We'll just store the name of hook_entity_insert()
+    // and change it if we need to.
+    $invocation = 'entity_insert';
+    // Now we need to either insert or update the fields which are
+    // attached to this entity. We use the same primary_keys logic
+    // to determine whether to update or insert, and which hook we
+    // need to invoke.
+    if (empty($primary_keys)) {
+      field_attach_insert('entity_city', $entity);
+    }
+    else {
+      field_attach_update('entity_city', $entity);
+      $invocation = 'entity_update';
+    }
+    // Invoke either hook_entity_update() or hook_entity_insert().
+    module_invoke_all($invocation, $entity, 'entity_city');
+    return $entity;
+  }
+
+  /**
+   * Delete a single entity.
+   *
+   * Really a convenience function for deleteMultiple().
+   */
+  public function delete($entity) {
+    $this->deleteMultiple(array($entity));
+  }
+
+  /**
+   * Delete one or more entity_example_basic entities.
+   *
+   * Deletion is unfortunately not supported in the base
+   * DrupalDefaultEntityController class.
+   *
+   * @param array $entities
+   *   An array of entity IDs or a single numeric ID.
+   */
+  public function deleteMultiple($entities) {
+    $basic_ids = array();
+    if (!empty($entities)) {
+      $transaction = db_transaction();
+      try {
+        foreach ($entities as $entity) {
+          // Invoke hook_entity_delete().
+          module_invoke_all('entity_delete', $entity, 'entity_city');
+          field_attach_delete('entity_city', $entity);
+          $basic_ids[] = $entity->entity_id;
+        }
+        db_delete('entity_city')
+          ->condition('entity_id', $basic_ids, 'IN')
+          ->execute();
+      }
+      catch (Exception $e) {
+        $transaction->rollback();
+        watchdog_exception('entity_example', $e);
+        throw $e;
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+name = offline test
+description = Contains the feature related to creating the custom entity and its migration.
+package = Custom
+files[] = offline_test.install
+dependencies[] = entity
+dependencies[] = entityreference
+core = 7.x
+

@@ -1,0 +1,77 @@
+<?php
+/**
+ * @file
+ * Install for a basic entity - need to create the base table for our entity.
+ * This table can have as many columns as you need to keep track of
+ * entity-specific data that will not be added via attached fields.
+ * The minimum information for the entity to work is an id and an entity name.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function offline_test_schema() {
+  $schema = array();
+
+  $schema['entity_city'] = array(
+    'description' => 'The base table for our city entity.',
+    'fields' => array(
+      'entity_id' => array(
+        'description' => 'Primary key of the city entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'bundle_type' => array(
+        'description' => 'The bundle type',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'A description of the item',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'location' => array(
+        'description' => 'Location of the city',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'pop' => array(
+        'description' => 'Pop',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'state' => array(
+        'description' => 'State of the city',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp of the entity creation time.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('entity_id'),
+  );
+
+  return $schema;
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function offline_test_uninstall() {
+  field_attach_delete_bundle('entity_city', 'city_entity_bundle');
+}
