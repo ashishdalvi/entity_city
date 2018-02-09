@@ -178,6 +178,7 @@ function entity_city_list_entities() {
       $rows[] = array(
         'data' => array(
           'id' => $entity->entity_id,
+          'unique_id' => $entity->id,
           'title' => l($entity->title, 'entity_city/' . $entity->entity_id),
           'location' => $entity->location,
           'pop' => $entity->pop,
@@ -189,7 +190,7 @@ function entity_city_list_entities() {
     $content['entity_table'] = array(
       '#theme' => 'table',
       '#rows' => $rows,
-      '#header' => array(t('ID'), t('Title'), t('Location'), t('Pop'), t('State')),
+      '#header' => array(t('ID'), t('Unique ID'), t('Title'), t('Location'), t('Pop'), t('State')),
     );
   }
   else {
@@ -231,6 +232,11 @@ function entity_city_view($entity, $view_mode = 'Full Mode') {
     '#title' => t('Created date'),
     '#markup' => format_date($entity->created),
   );
+  $entity->content['id'] = array(
+    '#type' => 'item',
+    '#title' => t('Unique ID'),
+    '#markup' => $entity->id,
+  );
   $entity->content['title'] = array(
     '#type' => 'item',
     '#title' => t('title'),
@@ -270,6 +276,10 @@ function offline_test_field_extra_fields() {
   $form_elements['title'] = array(
     'label' => t('title'),
     'description' => t('Entity Title'),
+  );
+  $form_elements['id'] = array(
+    'label' => t('Unique ID'),
+    'description' => t('Unique ID'),
   );
   $form_elements['location'] = array(
     'label' => t('Location'),
@@ -316,6 +326,12 @@ function entity_city_add() {
  *
  */
 function entity_city_form($form, &$form_state, $entity) {
+  $form['id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Unique ID'),
+    '#required' => TRUE,
+    '#default_value' => $entity->id,
+  );
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -380,6 +396,7 @@ function entity_city_form_validate($form, &$form_state) {
  */
 function entity_city_form_submit($form, &$form_state) {
   $entity = $form_state['values']['basic_entity'];
+  $entity->id = $form_state['values']['id'];
   $entity->title = $form_state['values']['title'];
   $entity->location = $form_state['values']['location'];
   $entity->pop = $form_state['values']['pop'];
@@ -471,6 +488,7 @@ class CityEntityController
     $entity->type = 'entity_city';
     $entity->entity_id = 0;
     $entity->bundle_type = 'city_entity_bundle';
+    $entity->id = '';
     $entity->title = '';
     $entity->location = '';
     $entity->pop = '';
@@ -555,5 +573,19 @@ class CityEntityController
         throw $e;
       }
     }
+  }
+}
+
+class EntityCityMetadataController extends EntityDefaultMetadataController {
+  public function entityPropertyInfo() {
+    $info = parent::entityPropertyInfo();
+    $info[$this->type]['properties']['my_id'] = array(
+      'label' => t('Custom ID'),
+      'type' => 'integer',
+      'description' => t('My Entity ID'),
+      'schema field' => 'my_id',
+      'setter callback' => 'entity_property_verbatim_set',
+    );
+    return $info;
   }
 }

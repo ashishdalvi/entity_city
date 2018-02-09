@@ -35,6 +35,12 @@ function offline_test_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'id' => array(
+        'description' => 'Unique ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'location' => array(
         'description' => 'Location of the city',
         'type' => 'varchar',
